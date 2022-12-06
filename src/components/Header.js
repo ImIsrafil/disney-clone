@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
-import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, provider } from "../firebase/firebase.init";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   selectUserName,
   selectUserPhoto,
+  setSignOutState,
   setUserLoginDetails,
 } from "../features/user/userSlice";
 
@@ -26,12 +27,19 @@ const Header = () => {
   }, [userName]);
 
   const handleAuth = () => {
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        setUser(result.user);
-        console.log(result.user);
-      })
-      .catch((err) => console.log(err.message));
+    if (!userName) {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          setUser(result.user);
+          console.log(result.user);
+        })
+        .catch((err) => console.log(err.message));
+    } else {
+      signOut(auth).then(() => {
+        dispatch(setSignOutState());
+        navigate("/");
+      });
+    }
   };
   const setUser = (user) => {
     dispatch(
@@ -80,7 +88,7 @@ const Header = () => {
         <SignOut>
           <UserImg src={userPhoto} alt={userName} />
           <DropDown>
-            <span>Sign out</span>
+            <span onClick={handleAuth}>Sign out</span>
           </DropDown>
         </SignOut>
       )}
@@ -202,9 +210,42 @@ const Login = styled.a`
 
 const UserImg = styled.img`
   height: 100%;
-  width: inherit;
 `;
-const SignOut = styled.div``;
-const DropDown = styled.div``;
+
+const DropDown = styled.div`
+  position: absolute;
+  top: 48px;
+  right: 0;
+  background: rgb(19, 19, 19);
+  border: 1px solid rgba(151, 151, 151, 0.34);
+  border-radius: 4px;
+  box-shadow: 0px 0px 18px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  font-size: 14px;
+  letter-spacing: 3px;
+  width: 100px;
+  opacity: 0;
+`;
+const SignOut = styled.div`
+  position: relative;
+  height: 48px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  ${UserImg} {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+  }
+  &:hover {
+    ${DropDown} {
+      opacity: 1;
+      transition-duration: 0.5s;
+    }
+  }
+`;
 
 export default Header;
